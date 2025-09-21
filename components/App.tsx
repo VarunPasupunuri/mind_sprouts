@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
-import { Page, UserRole, AuthView } from './types';
-import { AuthProvider, useAuth } from './hooks/useAuth';
-import { I18nProvider } from './hooks/useI18n';
-import { ThemeProvider } from './hooks/useTheme';
-import { XIcon } from './Icons';
+import { Page, UserRole, AuthView } from '../types';
+import { AuthProvider, useAuth } from '../hooks/useAuth';
+import { I18nProvider } from '../hooks/useI18n';
+import { ThemeProvider } from '../hooks/useTheme';
+import { XIcon } from './Icons'; // Assuming MenuIcon is also in Icons.tsx
 
 import LoginPage from './LoginPage';
 import SignupPage from './SignupPage';
@@ -15,7 +16,7 @@ import TasksAndChallenges from './TasksAndChallenges';
 import Leaderboard from './Leaderboard';
 import Resources from './Resources';
 import AiAssistant from './AiAssistant';
-import Profile from './Profile';
+import Profile from './EcoWorld';
 import About from './About';
 import Games from './Games';
 import Learn from './Learn';
@@ -26,7 +27,7 @@ import StudentRoster from './StudentRoster';
 import CommunityHub from './CommunityHub';
 import EcoDonts from './EcoDonts';
 import InteractiveQuizzes from './InteractiveQuizzes';
-import RedemptionCenter from './RedemptionCenter';
+import RedemptionCenter from './Profile';
 import EcoPointsDisplay from './EcoPointsDisplay';
 import LoginRewardToast from './LoginRewardToast';
 import AnalyticsDashboard from './AnalyticsDashboard';
