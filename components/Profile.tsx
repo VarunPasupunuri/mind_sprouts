@@ -1,192 +1,336 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { TrophyIcon, LeafIcon, ChartBarIcon, LogoutIcon, GlobeAltIcon } from './Icons';
 import { useI18n } from '../hooks/useI18n';
 import { useAuth } from '../hooks/useAuth';
-import { MOCK_REDEMPTION_ITEMS } from '../constants';
-import { RedemptionItem, RewardCategory, User } from '../types';
-import { GiftIcon, TagIcon, HeartIcon, XIcon, CheckmarkIcon, SparklesIcon, SwatchIcon } from './Icons';
+import { useTheme } from '../hooks/useTheme';
+import { UserRole } from '../types';
 
-// --- Confirmation Modal ---
-const ConfirmationModal: React.FC<{
-    item: RedemptionItem;
-    onConfirm: () => void;
-    onCancel: () => void;
-}> = ({ item, onConfirm, onCancel }) => {
-    const { t } = useI18n();
-    const itemName = t(item.titleKey as any);
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4" onClick={onCancel}>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('confirm_redemption_title')}</h2>
-                <p className="text-gray-600 dark:text-gray-400 mt-2 mb-6" dangerouslySetInnerHTML={{ __html: t('confirm_redemption_desc').replace('{cost}', `<strong class="text-yellow-500">${item.cost}</strong>`).replace('{itemName}', `<strong class="text-gray-800 dark:text-white">${itemName}</strong>`) }} />
-                <div className="flex gap-4">
-                    <button onClick={onCancel} className="w-full py-2 px-4 rounded-lg bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 font-semibold">{t('cancel')}</button>
-                    <button onClick={onConfirm} className="w-full py-2 px-4 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold">{t('confirm')}</button>
-                </div>
-            </div>
+const Toggle: React.FC<{ label: string, description: string, isEnabled: boolean, onToggle: () => void }> = ({ label, description, isEnabled, onToggle }) => (
+    <div className="flex items-center justify-between">
+        <div>
+            <p className="font-semibold text-gray-700 dark:text-gray-200">{label}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
         </div>
-    );
-};
+        <label className="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked={isEnabled} onChange={onToggle} className="sr-only peer" />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+        </label>
+    </div>
+);
 
-// --- Success Toast ---
-const SuccessToast: React.FC<{ message: string, onClose: () => void }> = ({ message, onClose }) => {
+
+const StatCard: React.FC<{ icon: React.ReactNode; title: string; value: string | number; color: string }> = ({ icon, title, value, color }) => (
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md flex items-center space-x-3">
+        <div className={`rounded-full p-2.5 ${color}`}>
+            {icon}
+        </div>
+        <div>
+            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider">{title}</p>
+            <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{value}</p>
+        </div>
+    </div>
+);
+
+const TeacherProfileView: React.FC = () => {
+    const { t } = useI18n();
+    const { user, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
+
+    type NotificationSettings = {
+        newChallenges: boolean;
+        leaderboard: boolean;
+        weeklySummary: boolean;
+    };
+
+    const [notifications, setNotifications] = useState<NotificationSettings>({
+        newChallenges: true,
+        leaderboard: false,
+        weeklySummary: true,
+    });
+
     useEffect(() => {
-        const timer = setTimeout(onClose, 3000);
-        return () => clearTimeout(timer);
-    }, [onClose]);
+        const storedSettings = localStorage.getItem('mindsprouts-notifications');
+        if (storedSettings) {
+            setNotifications(JSON.parse(storedSettings));
+        }
+    }, []);
 
-    return (
-        <div className="fixed top-5 right-5 bg-green-600 text-white shadow-2xl rounded-xl p-4 w-full max-w-sm z-50 flex items-center gap-3">
-            <CheckmarkIcon className="w-6 h-6" />
-            <p className="font-semibold">{message}</p>
-        </div>
-    );
-};
-
-// --- Reward Card ---
-const RewardCard: React.FC<{
-    item: RedemptionItem;
-    onRedeem: (item: RedemptionItem) => void;
-    onEquip: (avatarUrl: string) => void;
-    isRedeemed: boolean;
-    user: User | null;
-}> = ({ item, onRedeem, onEquip, isRedeemed, user }) => {
-    const { t } = useI18n();
-    const { stats } = useAuth();
-    const canAfford = stats.points >= item.cost;
-    const isAvatarItem = item.category === RewardCategory.AVATAR;
-    const isEquipped = isAvatarItem && user?.avatar === item.imageUrl;
-
-    const icons: Record<RedemptionItem['icon'], React.ReactNode> = {
-        'Badge': <GiftIcon className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />,
-        'Coupon': <TagIcon className="w-8 h-8 text-orange-600 dark:text-orange-300" />,
-        'Donation': <HeartIcon className="w-8 h-8 text-red-600 dark:text-red-300" />,
-        'Gift': <GiftIcon className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />,
+    const handleToggle = (key: keyof NotificationSettings) => {
+        setNotifications(prev => {
+            const newSettings = { ...prev, [key]: !prev[key] };
+            localStorage.setItem('mindsprouts-notifications', JSON.stringify(newSettings));
+            return newSettings;
+        });
     };
-    
-    const renderButton = () => {
-        if (isEquipped) {
-            return <button disabled className="px-4 py-2 text-sm font-semibold rounded-lg bg-gray-200 text-gray-500 dark:bg-gray-600 dark:text-gray-400">{t('equipped')}</button>;
-        }
-        if (isRedeemed && isAvatarItem && item.imageUrl) {
-            return <button onClick={() => onEquip(item.imageUrl!)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600">{t('set_as_avatar')}</button>;
-        }
-        if (isRedeemed) {
-            return <button disabled className="px-4 py-2 text-sm font-semibold rounded-lg bg-gray-200 text-gray-500 dark:bg-gray-600 dark:text-gray-400">{t('redeemed')}</button>;
-        }
-        if (canAfford) {
-            return <button onClick={() => onRedeem(item)} className="px-4 py-2 text-sm font-semibold rounded-lg bg-brand-primary text-white hover:bg-green-700">{t('redeem')}</button>;
-        }
-        return <button disabled className="px-4 py-2 text-sm font-semibold rounded-lg bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300">{t('not_enough_points')}</button>;
-    }
-
 
     return (
-        <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 flex flex-col ${isRedeemed ? 'opacity-60' : ''}`}>
-            <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                    {item.imageUrl ? <img src={item.imageUrl} alt={t(item.titleKey as any)} className="w-full h-full object-cover rounded-lg" /> : icons[item.icon]}
-                </div>
-                <div className="flex-grow">
-                    <h3 className="font-bold text-gray-800 dark:text-gray-100">{t(item.titleKey as any)}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t(item.descriptionKey as any)}</p>
+        <div className="space-y-8 max-w-4xl mx-auto">
+            <div>
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{t('profile')} &amp; {t('settings')}</h1>
+                <p className="mt-1 text-gray-600 dark:text-gray-400">{t('settings_subtitle')}</p>
+            </div>
+            
+             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 flex flex-col sm:flex-row items-center gap-8 border border-green-200 dark:border-green-800">
+                <img
+                    className="h-24 w-24 rounded-full object-cover ring-4 ring-green-200 dark:ring-green-800"
+                    src={user?.avatar}
+                    alt="User Avatar"
+                />
+                <div className="text-center sm:text-left">
+                    <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{user?.userId || 'User'}</h2>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">{user?.school || t('your_school')}</p>
                 </div>
             </div>
-            <div className="mt-4 pt-4 border-t dark:border-gray-700 flex justify-between items-center">
-                <p className="font-bold text-lg text-yellow-500 flex items-center gap-1.5"><SparklesIcon className="w-5 h-5"/>{item.cost.toLocaleString()}</p>
-                {renderButton()}
-            </div>
-        </div>
-    );
-};
 
-// --- Main Redemption Center Component ---
-const RedemptionCenter: React.FC = () => {
-    const { t } = useI18n();
-    const { user, stats, redeemedItems, redeemItem, equipAvatar } = useAuth();
-    const [activeCategory, setActiveCategory] = useState<RewardCategory>(RewardCategory.VIRTUAL);
-    const [confirmingItem, setConfirmingItem] = useState<RedemptionItem | null>(null);
-    const [showSuccess, setShowSuccess] = useState(false);
-
-    const filteredItems = useMemo(() => MOCK_REDEMPTION_ITEMS.filter(item => item.category === activeCategory), [activeCategory]);
-    
-    const handleRedeem = () => {
-        if (confirmingItem) {
-            const success = redeemItem(confirmingItem.id, confirmingItem.cost);
-            if (success) {
-                setShowSuccess(true);
-            }
-            setConfirmingItem(null);
-        }
-    };
-    
-    const categories: { key: RewardCategory, icon: React.ReactNode, nameKey: any }[] = [
-        { key: RewardCategory.VIRTUAL, icon: <GiftIcon className="w-5 h-5"/>, nameKey: 'category_virtual_goods' },
-        { key: RewardCategory.AVATAR, icon: <SwatchIcon className="w-5 h-5"/>, nameKey: 'category_avatar' },
-        { key: RewardCategory.DISCOUNT, icon: <TagIcon className="w-5 h-5"/>, nameKey: 'category_partner_discounts' },
-        { key: RewardCategory.DONATION, icon: <HeartIcon className="w-5 h-5"/>, nameKey: 'category_charity_donations' },
-    ];
-
-    return (
-        <>
-            {confirmingItem && (
-                <ConfirmationModal 
-                    item={confirmingItem}
-                    onConfirm={handleRedeem}
-                    onCancel={() => setConfirmingItem(null)}
-                />
-            )}
-            {showSuccess && (
-                <SuccessToast 
-                    message={t('redemption_successful')}
-                    onClose={() => setShowSuccess(false)}
-                />
-            )}
-
-            <div className="space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{t('redemption_center')}</h1>
-                        <p className="mt-1 text-gray-600 dark:text-gray-400">{t('redemption_center_subtitle')}</p>
-                    </div>
-                    <div className="flex-shrink-0 bg-white dark:bg-gray-700/50 p-3 rounded-xl shadow-md">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('your_points')}</p>
-                        <p className="text-2xl font-bold text-yellow-500 flex items-center gap-1.5"><SparklesIcon className="w-5 h-5"/>{stats.points.toLocaleString()}</p>
-                    </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                    {categories.map(category => (
-                        <button
-                            key={category.key}
-                            onClick={() => setActiveCategory(category.key)}
-                            className={`px-3 py-1.5 text-sm font-medium rounded-full flex items-center gap-2 ${
-                                activeCategory === category.key
-                                    ? 'bg-brand-primary text-white shadow'
-                                    : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                            }`}
-                        >
-                            {category.icon}
-                            {t(category.nameKey)}
-                        </button>
-                    ))}
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md space-y-6 divide-y divide-gray-200 dark:divide-gray-700 border border-green-200 dark:border-green-800">
+                <div className='space-y-4'>
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('notifications')}</h2>
+                    <Toggle 
+                        label={t('new_challenge_alerts')} 
+                        description={t('new_challenge_alerts_desc')}
+                        isEnabled={notifications.newChallenges}
+                        onToggle={() => handleToggle('newChallenges')}
+                    />
+                    <Toggle 
+                        label={t('leaderboard_updates')} 
+                        description={t('leaderboard_updates_desc')}
+                        isEnabled={notifications.leaderboard}
+                        onToggle={() => handleToggle('leaderboard')}
+                    />
+                    <Toggle 
+                        label={t('weekly_summary')} 
+                        description={t('weekly_summary_desc')}
+                        isEnabled={notifications.weeklySummary}
+                        onToggle={() => handleToggle('weeklySummary')}
+                    />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredItems.map(item => (
-                        <RewardCard 
-                            key={item.id} 
-                            item={item}
-                            onRedeem={setConfirmingItem}
-                            onEquip={equipAvatar}
-                            isRedeemed={redeemedItems.includes(item.id)}
-                            user={user}
-                        />
-                    ))}
+                <div className="pt-6 space-y-4">
+                     <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('appearance')}</h2>
+                     <Toggle 
+                        label={t('dark_mode')} 
+                        description={t('dark_mode_desc')}
+                        isEnabled={theme === 'dark'}
+                        onToggle={toggleTheme}
+                    />
+                </div>
+                
+                <div className="pt-6 space-y-4">
+                     <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('account')}</h2>
+                     <div className='flex flex-col sm:flex-row gap-4'>
+                        <button 
+                            onClick={() => alert(t('feature_not_implemented_desc'))}
+                            className="w-full sm:w-auto flex-1 text-center px-4 py-2 text-sm font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900/80">
+                            {t('change_password')}
+                        </button>
+                        <button 
+                            onClick={() => alert(t('feature_not_implemented_desc'))}
+                            className="w-full sm:w-auto flex-1 text-center px-4 py-2 text-sm font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900/80">
+                            {t('delete_account')}
+                        </button>
+                     </div>
+                     <div className='pt-4'>
+                         <button onClick={logout} className="w-full flex items-center justify-center gap-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg py-3">
+                            <LogoutIcon className="w-5 h-5" />
+                            {t('logout')}
+                        </button>
+                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 };
 
-export default RedemptionCenter;
+const StudentEcoWorldView: React.FC = () => {
+    const { t } = useI18n();
+    const { user, stats, unlockedEcoItems, placeEcoItem, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
+    const worldRef = useRef<HTMLDivElement>(null);
+
+    type NotificationSettings = {
+        newChallenges: boolean;
+        leaderboard: boolean;
+        weeklySummary: boolean;
+    };
+
+    const [notifications, setNotifications] = useState<NotificationSettings>({
+        newChallenges: true,
+        leaderboard: false,
+        weeklySummary: true,
+    });
+
+    useEffect(() => {
+        const storedSettings = localStorage.getItem('mindsprouts-notifications');
+        if (storedSettings) {
+            setNotifications(JSON.parse(storedSettings));
+        }
+    }, []);
+
+    const handleToggle = (key: keyof NotificationSettings) => {
+        setNotifications(prev => {
+            const newSettings = { ...prev, [key]: !prev[key] };
+            localStorage.setItem('mindsprouts-notifications', JSON.stringify(newSettings));
+            return newSettings;
+        });
+    };
+
+    const unplacedItems = unlockedEcoItems.filter(item => !item.isPlaced);
+    const placedItems = unlockedEcoItems.filter(item => item.isPlaced);
+    
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, itemId: string) => {
+        e.dataTransfer.setData("application/eco-item-id", itemId);
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const itemId = e.dataTransfer.getData("application/eco-item-id");
+        if (!itemId || !worldRef.current) return;
+
+        const worldRect = worldRef.current.getBoundingClientRect();
+        const x = e.clientX - worldRect.left;
+        const y = e.clientY - worldRect.top;
+        
+        // Normalize coordinates to be a percentage of the world's dimensions
+        const xPercent = (x / worldRect.width) * 100;
+        const yPercent = (y / worldRect.height) * 100;
+
+        placeEcoItem(itemId, xPercent, yPercent);
+    };
+
+
+    return (
+        <div className="space-y-8">
+            <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                     <GlobeAltIcon className="w-9 h-9 text-green-600" />
+                     <div>
+                        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{t('my_eco_world')}</h1>
+                        <p className="mt-1 text-gray-600 dark:text-gray-400">{t('eco_world_subtitle')}</p>
+                     </div>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Eco-World Grid */}
+                    <div 
+                        ref={worldRef}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        className="lg:col-span-2 h-96 lg:h-auto bg-green-100 dark:bg-green-900/40 rounded-2xl shadow-inner relative overflow-hidden bg-[linear-gradient(45deg,_rgba(255,255,255,0.05)_25%,_transparent_25%),_linear-gradient(-45deg,_rgba(255,255,255,0.05)_25%,_transparent_25%),_linear-gradient(45deg,_transparent_75%,_rgba(255,255,255,0.05)_75%),_linear-gradient(-45deg,_transparent_75%,_rgba(255,255,255,0.05)_75%)] bg-[length:20px_20px]"
+                    >
+                        {placedItems.map(item => (
+                            <div 
+                                key={item.id} 
+                                className="absolute text-4xl transform -translate-x-1/2 -translate-y-1/2"
+                                style={{ left: `${item.x}%`, top: `${item.y}%` }}
+                                title={t(item.nameKey as any)}
+                            >
+                                {item.emoji}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Stats & Inventory */}
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                            <StatCard icon={<TrophyIcon className="w-5 h-5 text-yellow-600"/>} title={t('total_points')} value={stats.points} color="bg-yellow-100 dark:bg-yellow-900/50" />
+                            <StatCard icon={<ChartBarIcon className="w-5 h-5 text-blue-600"/>} title={t('current_rank')} value={`#${stats.rank}`} color="bg-blue-100 dark:bg-blue-900/50" />
+                            <StatCard icon={<LeafIcon className="w-5 h-5 text-green-600"/>} title={t('challenges_done')} value={stats.challengesCompleted} color="bg-green-100 dark:bg-green-900/50" />
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-md">
+                            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">{t('unlocked_items')}</h2>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{t('drag_and_drop_items')}</p>
+                            <div className="grid grid-cols-4 gap-2">
+                                {unplacedItems.map(item => (
+                                    <div 
+                                        key={item.id} 
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, item.id)}
+                                        className="bg-gray-100 dark:bg-gray-700 rounded-lg aspect-square flex items-center justify-center text-3xl cursor-grab active:cursor-grabbing"
+                                        title={t(item.nameKey as any)}
+                                    >
+                                        {item.emoji}
+                                    </div>
+                                ))}
+                                {unplacedItems.length === 0 && (
+                                    <p className="col-span-4 text-center text-sm text-gray-500 dark:text-gray-400 py-4">{t('no_challenges_completed')}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             {/* Settings Section */}
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md space-y-6 divide-y divide-gray-200 dark:divide-gray-700 border border-green-200 dark:border-green-800">
+                <div className='space-y-4'>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('settings')}</h2>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 pt-2">{t('notifications')}</h3>
+                    <Toggle 
+                        label={t('new_challenge_alerts')} 
+                        description={t('new_challenge_alerts_desc')}
+                        isEnabled={notifications.newChallenges}
+                        onToggle={() => handleToggle('newChallenges')}
+                    />
+                    <Toggle 
+                        label={t('leaderboard_updates')} 
+                        description={t('leaderboard_updates_desc')}
+                        isEnabled={notifications.leaderboard}
+                        onToggle={() => handleToggle('leaderboard')}
+                    />
+                    <Toggle 
+                        label={t('weekly_summary')} 
+                        description={t('weekly_summary_desc')}
+                        isEnabled={notifications.weeklySummary}
+                        onToggle={() => handleToggle('weeklySummary')}
+                    />
+                </div>
+                
+                <div className="pt-6 space-y-4">
+                     <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('appearance')}</h2>
+                     <Toggle 
+                        label={t('dark_mode')} 
+                        description={t('dark_mode_desc')}
+                        isEnabled={theme === 'dark'}
+                        onToggle={toggleTheme}
+                    />
+                </div>
+                
+                <div className="pt-6 space-y-4">
+                     <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('account')}</h2>
+                     <div className='flex flex-col sm:flex-row gap-4'>
+                        <button 
+                            onClick={() => alert(t('feature_not_implemented_desc'))}
+                            className="w-full sm:w-auto flex-1 text-center px-4 py-2 text-sm font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900/80">
+                            {t('change_password')}
+                        </button>
+                        <button 
+                            onClick={() => alert(t('feature_not_implemented_desc'))}
+                            className="w-full sm:w-auto flex-1 text-center px-4 py-2 text-sm font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900/80">
+                            {t('delete_account')}
+                        </button>
+                     </div>
+                     <div className='pt-4'>
+                         <button onClick={logout} className="w-full flex items-center justify-center gap-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg py-3">
+                            <LogoutIcon className="w-5 h-5" />
+                            {t('logout')}
+                        </button>
+                     </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const Profile: React.FC = () => {
+    const { user } = useAuth();
+    if (user?.role === UserRole.TEACHER) {
+        return <TeacherProfileView />;
+    }
+    return <StudentEcoWorldView />;
+};
+
+export default Profile;

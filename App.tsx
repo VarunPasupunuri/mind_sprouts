@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Page, UserRole, AuthView } from './types';
 import { AuthProvider, useAuth } from './hooks/useAuth';
@@ -16,7 +15,7 @@ import TasksAndChallenges from './components/TasksAndChallenges';
 import Leaderboard from './components/Leaderboard';
 import Resources from './components/Resources';
 import AiAssistant from './components/AiAssistant';
-import EcoWorld from './components/EcoWorld';
+import Profile from './components/Profile';
 import About from './components/About';
 import Games from './components/Games';
 import Learn from './components/Learn';
@@ -27,7 +26,7 @@ import StudentRoster from './components/StudentRoster';
 import CommunityHub from './components/CommunityHub';
 import EcoDonts from './components/EcoDonts';
 import InteractiveQuizzes from './components/InteractiveQuizzes';
-import RedemptionCenter from './components/Profile';
+import RedemptionCenter from './components/RedemptionCenter';
 import EcoPointsDisplay from './components/EcoPointsDisplay';
 import LoginRewardToast from './components/LoginRewardToast';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
@@ -88,7 +87,7 @@ const AppContent: React.FC = () => {
       case Page.AI_ASSISTANT:
         return <Dashboard setCurrentPage={setCurrentPage} />;
       case Page.PROFILE:
-        return <EcoWorld />;
+        return <Profile />;
       case Page.ABOUT:
         return <About />;
       case Page.GAMES:
@@ -119,7 +118,7 @@ const AppContent: React.FC = () => {
         case Page.ANALYTICS:
             return <AnalyticsDashboard />;
         case Page.PROFILE:
-            return <EcoWorld />;
+            return <Profile />;
         case Page.ABOUT:
             return <About />;
         default:
@@ -145,7 +144,7 @@ const AppContent: React.FC = () => {
       <div className={`relative flex-1 flex flex-col overflow-y-auto transition-all duration-300 lg:ml-64`}>
         {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-30 flex items-center justify-between p-4 border-b dark:border-gray-700">
-           <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-md text-gray-700 dark:text-gray-200">
+           <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50 active:scale-95 transition-all">
               <MenuIcon className="w-6 h-6" />
            </button>
            <div className="flex items-center space-x-2">

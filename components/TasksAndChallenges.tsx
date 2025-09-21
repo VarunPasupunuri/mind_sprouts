@@ -6,13 +6,10 @@ import { BellIcon, XIcon, InfoIcon, CheckmarkIcon, UploadIcon, CameraIcon } from
 
 interface Reminder {
     time: Date;
-    timeoutId: NodeJS.Timeout;
 }
 
 // Helper hook to get the previous value of a prop or state
-// FIX: Changed to a function declaration to avoid potential TSX parsing issues with generics in arrow functions.
 function usePrevious<T>(value: T) {
-    // FIX: Initialize useRef with undefined to satisfy the expected arguments for the hook.
     const ref = useRef<T | undefined>(undefined);
     useEffect(() => {
       ref.current = value;
@@ -313,6 +310,16 @@ const TasksAndChallenges: React.FC = () => {
     const [notification, setNotification] = useState<{ title: string; message: string } | null>(null);
     const [submittingChallenge, setSubmittingChallenge] = useState<Challenge | null>(null);
 
+    const timeoutIds = useRef<Record<number, NodeJS.Timeout>>({});
+
+    // Effect for cleaning up timeouts when the component unmounts
+    useEffect(() => {
+        // The returned function is the cleanup function
+        return () => {
+            Object.values(timeoutIds.current).forEach(clearTimeout);
+        };
+    }, []); // Empty dependency array ensures this runs only on mount and unmount
+
     const categories = ['all', ...Object.values(ChallengeCategory)];
     const filteredChallenges = selectedCategory === 'all'
         ? challenges
@@ -324,32 +331,40 @@ const TasksAndChallenges: React.FC = () => {
             message: t('reminder_toast_message').replace('{challengeTitle}', t(challengeTitleKey as any))
         });
     };
+    
+    const handleCancelReminder = (challengeId: number) => {
+        const timeoutId = timeoutIds.current[challengeId];
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            delete timeoutIds.current[challengeId];
+        }
+        setReminders(prev => {
+            const newReminders = { ...prev };
+            delete newReminders[challengeId];
+            return newReminders;
+        });
+    };
 
     const handleSetReminder = (timeInMs: number) => {
         if (!modalChallenge) return;
         
+        // Always clear any existing reminder before setting a new one
+        handleCancelReminder(modalChallenge.id);
+
         const reminderTime = new Date(Date.now() + timeInMs);
         const timeoutId = setTimeout(() => {
             showNotification(modalChallenge.titleKey);
             handleCancelReminder(modalChallenge.id); // Remove reminder after it fires
         }, timeInMs);
         
+        timeoutIds.current[modalChallenge.id] = timeoutId;
+        
         setReminders(prev => ({
             ...prev,
-            [modalChallenge.id]: { time: reminderTime, timeoutId }
+            [modalChallenge.id]: { time: reminderTime }
         }));
         
         setModalChallenge(null);
-    };
-    
-    const handleCancelReminder = (challengeId: number) => {
-        const reminder = reminders[challengeId];
-        if (reminder) {
-            clearTimeout(reminder.timeoutId);
-            const newReminders = { ...reminders };
-            delete newReminders[challengeId];
-            setReminders(newReminders);
-        }
     };
     
     const handleProofSubmit = (challengeId: number) => {
@@ -394,7 +409,6 @@ const TasksAndChallenges: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                     {categories.map(category => (
                         <button
-                            // FIX: Explicitly cast category to string for the key prop.
                             key={category.toString()}
                             onClick={() => setSelectedCategory(category as ChallengeCategory | 'all')}
                             className={`px-4 py-2 text-sm font-medium rounded-full ${
