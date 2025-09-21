@@ -146,6 +146,11 @@ const en = {
   'community_highlight_badge': 'just earned the {badgeName} badge! 🏆',
   'community_highlight_challenge': 'just completed the "{challengeTitle}" challenge!',
   'give_kudos': 'Give Kudos ✨',
+  'personalized_tip_title': 'Your Personalized Tip',
+  'generating_tip': 'Generating your personal tip...',
+  'new_tip_button': 'New Tip',
+  'tip_error': 'Could not generate a tip right now. Please try again.',
+
 
   // Tasks & Challenges
   'tasks_and_challenges': 'Tasks & Challenges',
@@ -1408,6 +1413,11 @@ const hi = {
   'start_listening': 'माइक्रोफ़ोन से सुनना शुरू करें',
   'analytics': 'एनालिटिक्स',
 
+  'personalized_tip_title': 'आपकी व्यक्तिगत सलाह',
+  'generating_tip': 'आपकी व्यक्तिगत सलाह तैयार की जा रही है...',
+  'new_tip_button': 'नई सलाह',
+  'tip_error': 'अभी एक सलाह उत्पन्न नहीं की जा सकी। कृपया पुन: प्रयास करें।',
+
   // New keys
   'category_recycling': 'रीसाइक्लिंग',
   'category_energy': 'ऊर्जा',
@@ -1460,6 +1470,11 @@ const te = {
   'stop_listening': 'వినడం ఆపండి',
   'start_listening': 'మైక్రోఫోన్‌తో వినడం ప్రారంభించండి',
   'analytics': 'విశ్లేషణలు',
+
+  'personalized_tip_title': 'మీ వ్యక్తిగతీకరించిన చిట్కా',
+  'generating_tip': 'మీ వ్యక్తిగత చిట్కాను సృష్టిస్తోంది...',
+  'new_tip_button': 'కొత్త చిట్కా',
+  'tip_error': 'ప్రస్తుతం చిట్కాను రూపొందించడం సాధ్యపడలేదు. దయచేసి మళ్లీ ప్రయత్నించండి.',
 
   // New keys
   'category_recycling': 'రీసైక్లింగ్',

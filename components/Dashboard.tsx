@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { TrophyIcon, LeafIcon, ChartBarIcon, FireIcon, GlobeAltIcon, ShareIcon } from './Icons';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TrophyIcon, LeafIcon, ChartBarIcon, FireIcon, GlobeAltIcon, ShareIcon, LightBulbIcon, RefreshIcon, XCircleIcon } from './Icons';
 import { useI18n } from '../hooks/useI18n';
 import { useAuth } from '../hooks/useAuth';
 import { Page, CommunityHighlight } from '../types';
 import { MOCK_BADGES, MOCK_COMMUNITY_HIGHLIGHTS } from '../constants';
 import InteractiveTour from './InteractiveTour';
 import ReferFriendModal from './ReferFriendModal';
+import { getPersonalizedTip } from '../services/geminiService';
+
 
 const StatCard: React.FC<{
   icon: React.ReactNode;
@@ -103,7 +105,7 @@ const EcoWorldPreviewCard: React.FC<{ setCurrentPage: (page: Page) => void }> = 
 
 const Dashboard: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurrentPage }) => {
     const { t } = useI18n();
-    const { stats, challenges, user, unlockedBadges, dashboardWidgetOrder, setDashboardWidgetOrder, hasCompletedFirstMission, hasSeenTour, setHasSeenTour } = useAuth();
+    const { stats, challenges, user, unlockedBadges, dashboardWidgetOrder, setDashboardWidgetOrder, hasCompletedFirstMission, hasSeenTour, setHasSeenTour, ecoGoal } = useAuth();
     const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
     const [dragOverWidget, setDragOverWidget] = useState<string | null>(null);
     const [showTour, setShowTour] = useState(false);
@@ -261,15 +263,64 @@ const Dashboard: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurr
         );
     };
 
-    const TipCard = () => (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg h-full card-hover">
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('eco_tip_of_the_day')}</h2>
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-xl border border-blue-200 dark:border-blue-800 space-y-2">
-                <p className="text-md font-semibold text-blue-800 dark:text-blue-300">{t('go_digital')}</p>
-                <p className="text-gray-700 dark:text-gray-300 text-sm">{t('digital_tip')}</p>
+    const PersonalizedTipCard = () => {
+        const { t } = useI18n();
+        const { challenges, ecoGoal } = useAuth();
+        const [tip, setTip] = useState('');
+        const [isLoading, setIsLoading] = useState(true);
+        const [error, setError] = useState<string | null>(null);
+
+        const fetchTip = useCallback(async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const completedChallenges = challenges.filter(c => c.completed);
+                const completedChallengeTitles = completedChallenges.map(c => t(c.titleKey as any));
+                const tipContext = { completedChallengeTitles, ecoGoal };
+                const generatedTip = await getPersonalizedTip(tipContext);
+                setTip(generatedTip);
+            } catch (e) {
+                setError(t('tip_error'));
+                console.error(e);
+            } finally {
+                setIsLoading(false);
+            }
+        }, [challenges, ecoGoal, t]);
+
+        useEffect(() => {
+            fetchTip();
+        }, [fetchTip]);
+
+        return (
+            <div className="bg-gradient-to-br from-cyan-400 to-blue-500 dark:from-cyan-800 dark:to-blue-900 p-6 rounded-2xl shadow-lg h-full flex flex-col card-hover">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                        <LightBulbIcon className="w-7 h-7 text-white/90" />
+                        <h2 className="text-2xl font-semibold text-white">{t('personalized_tip_title')}</h2>
+                    </div>
+                    <button onClick={fetchTip} disabled={isLoading} className="p-2 rounded-full text-white/80 hover:bg-white/20 btn-subtle-interactive" title={t('new_tip_button')}>
+                        <RefreshIcon className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                </div>
+                <div className="flex-grow flex items-center justify-center text-white/90 text-center">
+                    {isLoading ? (
+                        <div className="space-y-2 animate-pulse w-full">
+                            <div className="h-4 bg-white/30 rounded-full w-3/4 mx-auto"></div>
+                            <div className="h-4 bg-white/30 rounded-full w-full mx-auto"></div>
+                            <div className="h-4 bg-white/30 rounded-full w-5/6 mx-auto"></div>
+                        </div>
+                    ) : error ? (
+                         <div className="flex items-center gap-2 text-white/80">
+                            <XCircleIcon className="w-6 h-6"/>
+                            <p>{error}</p>
+                         </div>
+                    ) : (
+                        <p className="text-lg">{tip}</p>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const ReferralCard = () => (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg h-full flex flex-col card-hover">
@@ -297,7 +348,7 @@ const Dashboard: React.FC<{ setCurrentPage: (page: Page) => void }> = ({ setCurr
         community: <CommunitySpotlightCard />,
         referral: <ReferralCard />,
         ecoworld: <EcoWorldPreviewCard setCurrentPage={setCurrentPage} />,
-        tip: <TipCard />,
+        personalizedTip: <PersonalizedTipCard />,
     };
     
     return (

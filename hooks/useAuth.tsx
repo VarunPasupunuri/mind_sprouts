@@ -110,7 +110,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [assignmentProgress, setAssignmentProgress] = useState<Record<number, { status: AssignmentStatus, submission?: any, submissionImageName?: string }>>({});
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [redeemedItems, setRedeemedItems] = useState<string[]>([]);
-  const [dashboardWidgetOrder, setDashboardWidgetOrder] = useState<string[]>(['journey', 'milestone', 'community', 'referral', 'ecoworld', 'tip']);
+  const [dashboardWidgetOrder, setDashboardWidgetOrder] = useState<string[]>(['journey', 'milestone', 'community', 'referral', 'ecoworld', 'personalizedTip']);
   
   const [hasCompletedFirstMission, setHasCompletedFirstMission] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
