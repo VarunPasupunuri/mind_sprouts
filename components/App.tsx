@@ -3,34 +3,34 @@ import { Page, UserRole, AuthView } from './types';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { I18nProvider } from './hooks/useI18n';
 import { ThemeProvider } from './hooks/useTheme';
-import { XIcon } from './components/Icons'; // Assuming MenuIcon is also in Icons.tsx
+import { XIcon } from './Icons';
 
-import LoginPage from './components/LoginPage';
-import SignupPage from './components/SignupPage';
-import ForgotPasswordPage from './components/ForgotPasswordPage';
-import ResetPasswordPage from './components/ResetPasswordPage';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import TasksAndChallenges from './components/TasksAndChallenges';
-import Leaderboard from './components/Leaderboard';
-import Resources from './components/Resources';
-import AiAssistant from './components/AiAssistant';
-import EcoWorld from './components/EcoWorld';
-import About from './components/About';
-import Games from './components/Games';
-import Learn from './components/Learn';
-import WeeklyAssignments from './components/WeeklyAssignments';
-import Notifications from './components/Notifications';
-import LearningVideos from './components/LearningVideos';
-import StudentRoster from './components/StudentRoster';
-import CommunityHub from './components/CommunityHub';
-import EcoDonts from './components/EcoDonts';
-import InteractiveQuizzes from './components/InteractiveQuizzes';
-import RedemptionCenter from './components/Profile';
-import EcoPointsDisplay from './components/EcoPointsDisplay';
-import LoginRewardToast from './components/LoginRewardToast';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
-import ActiveUsersWidget from './components/ActiveUsersWidget';
+import LoginPage from './LoginPage';
+import SignupPage from './SignupPage';
+import ForgotPasswordPage from './ForgotPasswordPage';
+import ResetPasswordPage from './ResetPasswordPage';
+import Sidebar from './Sidebar';
+import Dashboard from './Dashboard';
+import TasksAndChallenges from './TasksAndChallenges';
+import Leaderboard from './Leaderboard';
+import Resources from './Resources';
+import AiAssistant from './AiAssistant';
+import Profile from './Profile';
+import About from './About';
+import Games from './Games';
+import Learn from './Learn';
+import WeeklyAssignments from './WeeklyAssignments';
+import Notifications from './Notifications';
+import LearningVideos from './LearningVideos';
+import StudentRoster from './StudentRoster';
+import CommunityHub from './CommunityHub';
+import EcoDonts from './EcoDonts';
+import InteractiveQuizzes from './InteractiveQuizzes';
+import RedemptionCenter from './RedemptionCenter';
+import EcoPointsDisplay from './EcoPointsDisplay';
+import LoginRewardToast from './LoginRewardToast';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import ActiveUsersWidget from './ActiveUsersWidget';
 
 const MenuIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" {...props}>
@@ -87,7 +87,7 @@ const AppContent: React.FC = () => {
       case Page.AI_ASSISTANT:
         return <Dashboard setCurrentPage={setCurrentPage} />;
       case Page.PROFILE:
-        return <EcoWorld />;
+        return <Profile />;
       case Page.ABOUT:
         return <About />;
       case Page.GAMES:
@@ -118,7 +118,7 @@ const AppContent: React.FC = () => {
         case Page.ANALYTICS:
             return <AnalyticsDashboard />;
         case Page.PROFILE:
-            return <EcoWorld />;
+            return <Profile />;
         case Page.ABOUT:
             return <About />;
         default:

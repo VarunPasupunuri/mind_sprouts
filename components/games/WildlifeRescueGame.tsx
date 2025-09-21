@@ -1,4 +1,3 @@
-// FIX: Import 'useRef' from react to resolve 'Cannot find name' error.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useI18n } from '../../hooks/useI18n';
 import { Difficulty } from '../../types';

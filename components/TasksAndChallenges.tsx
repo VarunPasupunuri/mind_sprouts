@@ -314,11 +314,12 @@ const TasksAndChallenges: React.FC = () => {
 
     // Effect for cleaning up timeouts when the component unmounts
     useEffect(() => {
+        const ids = timeoutIds.current;
         // The returned function is the cleanup function
         return () => {
-            Object.values(timeoutIds.current).forEach(clearTimeout);
+            Object.values(ids).forEach(clearTimeout);
         };
-    }, []); // Empty dependency array ensures this runs only on mount and unmount
+    }, []);
 
     const categories = ['all', ...Object.values(ChallengeCategory)];
     const filteredChallenges = selectedCategory === 'all'
@@ -348,13 +349,12 @@ const TasksAndChallenges: React.FC = () => {
     const handleSetReminder = (timeInMs: number) => {
         if (!modalChallenge) return;
         
-        // Always clear any existing reminder before setting a new one
         handleCancelReminder(modalChallenge.id);
 
         const reminderTime = new Date(Date.now() + timeInMs);
         const timeoutId = setTimeout(() => {
             showNotification(modalChallenge.titleKey);
-            handleCancelReminder(modalChallenge.id); // Remove reminder after it fires
+            handleCancelReminder(modalChallenge.id);
         }, timeInMs);
         
         timeoutIds.current[modalChallenge.id] = timeoutId;
