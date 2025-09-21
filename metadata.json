@@ -1,0 +1,8 @@
+{
+  "name": "Mind Sprouts: Gamified Eco Learning",
+  "description": "An engaging and gamified environmental education platform for schools and colleges. Complete challenges, play eco-games, earn points, climb the leaderboard, and learn how to protect our planet with Mind Sprouts.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

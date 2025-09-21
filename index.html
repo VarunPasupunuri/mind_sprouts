@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link id="favicon" rel="icon" type="image/png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mind Sprouts: Gamified Eco Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Add Tailwind config for class-based dark mode
+      tailwind.config = {
+        darkMode: 'class',
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --brand-primary: #2D5A3D;
+        --brand-secondary: #E8F5E9;
+        --brand-accent: #FFC107;
+        --hover-border-color: #34D399; /* emerald-400 */
+      }
+      body {
+        font-family: 'Poppins', sans-serif;
+        transition: background-color 0.5s ease, color 0.5s ease;
+        /* Background is now handled by a pseudo-element for light mode
+           and a class-based rule for dark mode to allow z-indexing of leaves. */
+        background-color: transparent;
+      }
+      
+      /* Light mode gradient background */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0; /* a shorthand for top, right, bottom, left = 0 */
+        z-index: -2;
+        background-color: #f0fdf4; /* A light green fallback */
+        background-image: linear-gradient(to bottom right, #dcfce7, #f0fdf4);
+        transition: opacity 0.5s ease;
+        pointer-events: none; /* Make sure it doesn't interfere with anything */
+      }
+
+      /* Dark mode solid background on body, and hide the pseudo-element */
+      .dark body {
+        background-color: #111827; /* This is Tailwind's gray-900 */
+      }
+      .dark body::before {
+        opacity: 0;
+      }
+
+      .bg-brand-primary { background-color: var(--brand-primary); }
+      .text-brand-primary { color: var(--brand-primary); }
+      .bg-brand-secondary { background-color: var(--brand-secondary); }
+      .text-brand-secondary { color: var(--brand-secondary); }
+      .bg-brand-accent { background-color: var(--brand-accent); }
+      .text-brand-accent { color: var(--brand-accent); }
+
+      /* -- Global Transitions & Focus -- */
+      * {
+        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+      }
+      
+      *:focus-visible {
+        outline: 2px solid var(--hover-border-color);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      
+      /* -- Custom Scrollbar -- */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: var(--brand-primary);
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+      }
+      .dark ::-webkit-scrollbar-thumb {
+         background-color: #a7f3d0;
+      }
+
+
+      /* -- Consistent Hover Effect -- */
+      /* Cards have a transparent border to prevent layout shift on hover */
+      .card-hover {
+        border: 1px solid transparent;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1);
+        border-color: var(--hover-border-color);
+      }
+      .dark .card-hover:hover {
+        box-shadow: 0 10px 20px -5px rgba(0,0,0,0.2);
+      }
+      
+      /* Buttons get a subtle lift and brightness change */
+      .btn-hover {
+        transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+      }
+      .btn-hover:not(:disabled):hover {
+        transform: translateY(-2px);
+        filter: brightness(1.05);
+        box-shadow: 0 4px 10px -2px rgba(0,0,0,0.1);
+      }
+      .btn-hover:not(:disabled):active {
+        transform: translateY(-1px);
+        filter: brightness(0.95);
+        box-shadow: 0 2px 5px -1px rgba(0,0,0,0.1);
+      }
+
+      /* For smaller buttons, tags, and icon buttons */
+      .btn-subtle-interactive {
+        transition: transform 0.15s ease, background-color 0.2s ease, opacity 0.2s ease;
+      }
+      .btn-subtle-interactive:not(:disabled):hover {
+        transform: scale(1.05);
+        opacity: 0.9;
+      }
+      .btn-subtle-interactive:not(:disabled):active {
+        transform: scale(0.95);
+        opacity: 1;
+      }
+
+      /* For clickable list items or modal options */
+      .list-item-interactive {
+        transition: background-color 0.2s ease;
+      }
+      .list-item-interactive:not(:disabled):active {
+          background-color: var(--brand-secondary);
+      }
+      .dark .list-item-interactive:not(:disabled):active {
+          background-color: rgba(255, 255, 255, 0.1);
+      }
+      
+      /* General Animations */
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out forwards;
+      }
+      
+      /* Drag and Drop styles */
+      .dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+        transform: scale(1.03);
+        box-shadow: 0 15px 30px -5px rgba(0,0,0,0.2);
+      }
+      .drag-over {
+        border-style: dashed;
+        border-width: 2px;
+        border-color: var(--brand-primary);
+        background-color: var(--brand-secondary);
+      }
+      .dark .drag-over {
+        border-color: var(--hover-border-color);
+        background-color: #14532d;
+      }
+
+      /* Leaderboard Animations */
+      @keyframes rankUp {
+        0% { background-color: rgba(74, 222, 128, 0); transform: scale(1); }
+        50% { background-color: rgba(74, 222, 128, 0.3); transform: scale(1.02); }
+        100% { background-color: rgba(74, 222, 128, 0); transform: scale(1); }
+      }
+      .animate-rank-up { animation: rankUp 1.5s ease-out; }
+
+      @keyframes rankDown {
+        0% { background-color: rgba(239, 68, 68, 0); }
+        50% { background-color: rgba(239, 68, 68, 0.3); }
+        100% { background-color: rgba(239, 68, 68, 0); }
+      }
+      .animate-rank-down { animation: rankDown 1.5s ease-out; }
+
+      /* Leaf Animation */
+      #leaf-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .leaf {
+        position: absolute;
+        width: 20px;
+        height: 30px;
+        background-color: rgba(45, 90, 61, 0.4); /* Semi-transparent leaf color */
+        border-radius: 50% 0;
+        /* Using two animations for a more natural, fluttering motion */
+        animation-name: fall, sway;
+        animation-timing-function: linear, ease-in-out;
+        animation-iteration-count: infinite, infinite;
+        animation-direction: normal, alternate;
+        /* Start leaves off-screen */
+        top: -50px; 
+      }
+      
+      /* Animation for the vertical fall */
+      @keyframes fall {
+        from {
+            top: -50px;
+            opacity: 1;
+        }
+        to {
+          top: 110vh;
+          opacity: 0;
+        }
+      }
+
+      /* Animation for the horizontal swaying and tumbling */
+      @keyframes sway {
+        from {
+          transform: translateX(0px) rotate(0deg);
+        }
+        to {
+          transform: translateX(80px) rotate(270deg);
+        }
+      }
+
+      /* Variations for each leaf to create a random, natural effect */
+      .leaf:nth-child(1) { left: 10%; animation-duration: 15s, 4s; animation-delay: 0s, 0s; }
+      .leaf:nth-child(2) { left: 20%; animation-duration: 12s, 5s; animation-delay: 1s, 0.2s; width: 15px; height: 22px; background-color: rgba(45, 90, 61, 0.3);}
+      .leaf:nth-child(3) { left: 30%; animation-duration: 18s, 3s; animation-delay: 2s, 0.5s; }
+      .leaf:nth-child(4) { left: 40%; animation-duration: 14s, 6s; animation-delay: 3s, 0.1s; width: 25px; height: 37px; background-color: rgba(45, 90, 61, 0.5);}
+      .leaf:nth-child(5) { left: 50%; animation-duration: 16s, 4.5s; animation-delay: 4s, 0.8s; }
+      .leaf:nth-child(6) { left: 60%; animation-duration: 11s, 3.5s; animation-delay: 5s, 1s; width: 18px; height: 27px; background-color: rgba(45, 90, 61, 0.35);}
+      .leaf:nth-child(7) { left: 70%; animation-duration: 20s, 5.5s; animation-delay: 6s, 0.3s; }
+      .leaf:nth-child(8) { left: 80%; animation-duration: 13s, 2.5s; animation-delay: 7s, 0.6s; }
+      .leaf:nth-child(9) { left: 90%; animation-duration: 17s, 4s; animation-delay: 8s, 0.9s; width: 12px; height: 18px; background-color: rgba(45, 90, 61, 0.25);}
+      .leaf:nth-child(10) { left: 5%; animation-duration: 19s, 5s; animation-delay: 9s, 0.4s; }
+      /* Added 5 more leaves for a fuller effect */
+      .leaf:nth-child(11) { left: 15%; animation-duration: 14s, 3.2s; animation-delay: 10s, 0.7s; }
+      .leaf:nth-child(12) { left: 25%; animation-duration: 17s, 5.2s; animation-delay: 12s, 1.2s; width: 16px; height: 24px; background-color: rgba(45, 90, 61, 0.45);}
+      .leaf:nth-child(13) { left: 65%; animation-duration: 12s, 4.3s; animation-delay: 14s, 1.7s; }
+      .leaf:nth-child(14) { left: 75%; animation-duration: 21s, 6.1s; animation-delay: 11s, 1.3s; width: 22px; height: 33px; background-color: rgba(45, 90, 61, 0.55);}
+      .leaf:nth-child(15) { left: 85%; animation-duration: 15s, 3.7s; animation-delay: 13s, 1.9s; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1"
+  }
+}
+</script>
+</head>
+  <body class="text-gray-800 dark:text-gray-200 antialiased">
+    <div id="leaf-container">
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
