@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Page, UserRole, AuthView } from '../types';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
@@ -16,7 +15,7 @@ import TasksAndChallenges from './TasksAndChallenges';
 import Leaderboard from './Leaderboard';
 import Resources from './Resources';
 import AiAssistant from './AiAssistant';
-import Profile from './EcoWorld';
+import Profile from './Profile';
 import About from './About';
 import Games from './Games';
 import Learn from './Learn';
@@ -27,7 +26,7 @@ import StudentRoster from './StudentRoster';
 import CommunityHub from './CommunityHub';
 import EcoDonts from './EcoDonts';
 import InteractiveQuizzes from './InteractiveQuizzes';
-import RedemptionCenter from './Profile';
+import RedemptionCenter from './RedemptionCenter';
 import EcoPointsDisplay from './EcoPointsDisplay';
 import LoginRewardToast from './LoginRewardToast';
 import AnalyticsDashboard from './AnalyticsDashboard';
